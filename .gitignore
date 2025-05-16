@@ -3,3 +3,6 @@ node_modules/
 
 # Variables de entorno
 .env
+
+# Ignorar credenciales de Firebase
+/config/secrets/serviceAccountKey.json

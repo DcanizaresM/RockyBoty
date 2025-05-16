@@ -21,43 +21,23 @@
     "ultimaAccion": "2025-03-27T15:19:11.528Z",
     "firstPlayDate": "2025-03-27T15:19:11.528Z"
   },
-  "688525699233087530": {
-    "pokemon": "mew",
-    "type": "psychic",
-    "imagen": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
-    "nivel": 3,
-    "experiencia": 50,
-    "felicidad": 79,
-    "hambre": 50,
-    "sueño": 50,
-    "fuerza": 85,
-    "defensa": 96,
-    "agilidad": 6,
-    "hp": 62,
-    "moves": [
-      "hidrobomba",
-      "picotazoVeneno"
-    ],
-    "ultimaAccion": "2025-04-30T08:05:32.572Z",
-    "firstPlayDate": "2025-04-30T08:05:32.572Z"
+  "1371390965599961098": {
+    "avatar": "squirtel"
   },
   "895676849882009600": {
-    "pokemon": "mewtwo",
-    "type": "psychic",
-    "imagen": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+    "pokemon": "Tangela",
+    "type": null,
+    "imagen": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/114.png",
     "nivel": 2,
-    "experiencia": 50,
-    "felicidad": 70,
+    "experiencia": 100,
+    "felicidad": 80,
     "hambre": 50,
-    "sueño": 50,
-    "fuerza": 67,
-    "defensa": 49,
-    "agilidad": 85,
-    "hp": 67,
-    "moves": [
-      "garraSombra",
-      "picotazoVeneno"
-    ],
-    "ultimaAccion": "2025-04-30T08:05:57.610Z"
+    "sueno": 50,
+    "fuerza": 0,
+    "defensa": 0,
+    "agilidad": 0,
+    "hp": 0,
+    "moves": [],
+    "ultimaAccion": "2025-05-13T15:39:18.457Z"
   }
 }

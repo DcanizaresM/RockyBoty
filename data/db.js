@@ -1,49 +1,95 @@
-const fs = require('fs');
-const path = require('path');
+// utils/db.js
+// Reemplaza el acceso a archivos JSON por Cloud Firestore
 
-const usersPath = path.join(__dirname, 'users.json');
-const battlesPath = path.join(__dirname, 'battles.json');
+const admin = require('firebase-admin');
+const db = require('../config/firebase');
 
-// Funciones de usuarios
-function getAllUsers() {
-    return JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+const usuariosCol = db.collection('usuarios');
+const batallasCol = db.collection('combates');
+
+/**
+ * Devuelve un array de todos los usuarios, incluyendo su id.
+ * Cada objeto: { id, ...campos }
+ */
+async function getAllUsers() {
+    const snapshot = await usuariosCol.get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function saveAllUsers(users) {
-    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+/**
+ * Reemplaza completamente la colección 'usuarios' con el array proporcionado.
+ * Cada elemento del array debe incluir la propiedad 'id'.
+ */
+async function saveAllUsers(users) {
+    const batch = db.batch();
+
+    // Borrar documentos existentes
+    const existing = await usuariosCol.get();
+    existing.docs.forEach(doc => batch.delete(doc.ref));
+
+    // Añadir nuevos usuarios
+    users.forEach(user => {
+        const { id, ...data } = user;
+        const ref = usuariosCol.doc(id);
+        batch.set(ref, data);
+    });
+
+    await batch.commit();
 }
 
-function getUser(userId) {
-    const users = getAllUsers();
-    return users[userId] || null;
+/**
+ * Obtiene un usuario por su ID.
+ * Devuelve { id, ...campos } o null si no existe.
+ */
+async function getUser(userId) {
+    const doc = await usuariosCol.doc(userId).get();
+    if (!doc.exists) return null;
+    return { id: doc.id, ...doc.data() };
 }
 
-function saveUser(userId, userData) {
-    const users = getAllUsers();
-    users[userId] = userData;
-    saveAllUsers(users);
+/**
+ * Crea o actualiza un usuario.
+ * userData puede incluir cualquier campo (ej. username, starter, team, etc.).
+ */
+async function saveUser(userId, userData) {
+    await usuariosCol.doc(userId).set(userData, { merge: true });
 }
 
-// Funciones de batallas
-function getAllBattles() {
-    try {
-        return JSON.parse(fs.readFileSync(battlesPath, 'utf8'));
-    } catch (err) {
-        return []; // Si no existe, retornamos un array vacío
-    }
+/**
+ * Devuelve un array con todas las batallas, incluyendo su id.
+ * Cada objeto: { id, ...campos }
+ */
+async function getAllBattles() {
+    const snapshot = await batallasCol.get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function saveAllBattles(battles) {
-    fs.writeFileSync(battlesPath, JSON.stringify(battles, null, 2));
+/**
+ * Añade todas las batallas proporcionadas a la colección, borrando previo contenido.
+ * Utiliza add() para generar IDs automáticamente.
+ */
+async function saveAllBattles(battles) {
+    const batch = db.batch();
+
+    // Borrar documentos existentes
+    const existing = await batallasCol.get();
+    existing.docs.forEach(doc => batch.delete(doc.ref));
+
+    // Añadir nuevas batallas con ID generado por Firestore
+    battles.forEach(battle => {
+        const { id, ...data } = battle;
+        const ref = batallasCol.doc(); // ID automático
+        batch.set(ref, data);
+    });
+
+    await batch.commit();
 }
 
 module.exports = {
-    // Funciones de usuarios
     getAllUsers,
     saveAllUsers,
     getUser,
     saveUser,
-    // Funciones de batallas
     getAllBattles,
     saveAllBattles
 };

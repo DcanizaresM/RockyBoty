@@ -15,11 +15,11 @@ module.exports = {
         users[userId] = actualizarEstadoPorTiempo(users[userId]);
         let poke = users[userId];
 
-        if (poke.sueño <= 10) {
+        if (poke.sueno <= 10) {
             return message.reply(`${poke.pokemon} ya está descansado 😌`);
         }
 
-        poke.sueño = Math.max(0, poke.sueño - 40);
+        poke.sueno = Math.max(0, poke.sueno - 40);
         poke.felicidad = Math.min(100, poke.felicidad + 10);
         poke.ultimaAccion = new Date().toISOString();
 
