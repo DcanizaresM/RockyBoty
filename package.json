@@ -11,9 +11,11 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "dependencies": {
     "@discordjs/builders": "^1.10.1",
-    "@discordjs/opus": "^0.10.0",
     "@discordjs/rest": "^2.4.3",
     "@discordjs/voice": "^0.18.0",
     "@distube/spotify": "^2.0.2",
@@ -39,5 +41,8 @@
     "youtube-sr": "^4.3.11",
     "ytdl-core": "^4.11.5",
     "ytsr": "^3.8.4"
+  },
+  "optionalDependencies": {
+    "@discordjs/opus": "^0.10.0"
   }
 }
