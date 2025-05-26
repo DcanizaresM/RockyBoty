@@ -1,6 +1,12 @@
 // index.js
 require('dotenv').config();
 
+console.log('🔍 ENV VAR CHECK:', {
+    FIREBASE_SERVICE_ACCOUNT_BASE64: !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
+    DISCORD_TOKEN: !!process.env.DISCORD_TOKEN,
+    SENDGRID_API_KEY: process.env.SENDGRID_API_KEY?.startsWith('SG.') ?? false,
+});
+
 const commandChannels = {
     capturar: '1359486378353885326',
     alimentar: '1374031695275233310',
