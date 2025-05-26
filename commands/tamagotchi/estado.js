@@ -1,57 +1,52 @@
 // commands/tamagotchi/estado.js
 const { EmbedBuilder } = require('discord.js');
 const { actualizarEstadoPorTiempo } = require('../../utils/estadoHelper');
+const { intentarEvolucion } = require('../../utils/evolucionHelper');
 const { getUser, saveUser } = require('../../data/db');
-const evoluciones = require('../../utils/evoluciones');
+const fetch = require('node-fetch');
 
 module.exports = {
     name: 'estado',
-    description: 'Muestra el estado de tu Pokémon principal.',
+    description: 'Muestra el estado de un Pokémon de tu equipo. Uso: !estado <nombre-pokemon>',
     async execute(message, args) {
-
-
-        // 1) Comprobar si el comando se ejecuta en el canal correcto
-        const ALLOWED_CHANNEL = '1359486378353885326';
-        if (message.channel.id !== ALLOWED_CHANNEL) {
-            return message.reply(`⚠️ Este comando sólo funciona en <#${ALLOWED_CHANNEL}>.`);
+        const nombre = args[0]?.toLowerCase();
+        if (!nombre) {
+            return message.reply('❌ Debes indicar el nombre de tu Pokémon: `!estado <nombre-pokemon>`');
         }
-
-
-
-
-
 
         const userId = message.author.id;
-
-        // 1) Leemos el usuario de Firestore
         const user = await getUser(userId);
-        if (!user || !Array.isArray(user.team) || user.team.length === 0) {
-            return message.reply('¡Aún no has capturado un Pokémon! Usa `!capturar` primero.');
+        if (!user?.team?.length) {
+            return message.reply('❌ ¡Aún no tienes un equipo! Usa `!capturar` para añadir tu primer Pokémon.');
         }
 
-        // 2) Trabajamos con el primer Pokémon en el equipo
-        let poke = user.team[0];
-
-        // 3) Aplicar decay/ganancia por tiempo
-        poke = actualizarEstadoPorTiempo(poke);
-
-        // 4) Comprobar evolución
-        const evo = evoluciones[poke.pokemon];
-        if (evo && poke.nivel >= evo.nivel) {
-            const anterior = poke.pokemon;
-            poke.pokemon = evo.evolucionaA;
-            // Informamos de la evolución
-            await message.channel.send(
-                `🎉 ¡${anterior} ha evolucionado a **${poke.pokemon}**! 🧬`
-            );
+        // 1) Buscar el Pokémon en el equipo
+        const team = user.team;
+        const idx = team.findIndex(p => p.pokemon.toLowerCase() === nombre);
+        if (idx === -1) {
+            return message.reply(`❌ No tienes a **${nombre.toUpperCase()}** en tu equipo.`);
         }
 
-        // 5) Guardar solo el Pokémon actualizado en Firestore
-        const newTeam = [...user.team];
-        newTeam[0] = poke;
-        await saveUser(userId, { team: newTeam });
+        // 2) Aplicar decay/ganancia temporal
+        let poke = actualizarEstadoPorTiempo(team[idx]);
 
-        // 6) Obtener artwork desde la PokéAPI
+        // 3) Intentar evolución automática
+        try {
+            const evolucionó = await intentarEvolucion(poke);
+            if (evolucionó) {
+                await message.channel.send(
+                    `🎉 ¡Tu ${poke.pokemon.toUpperCase()} ha evolucionado automáticamente! 🧬`
+                );
+            }
+        } catch (err) {
+            console.error('Error al intentar evolución en !estado:', err);
+        }
+
+        // 4) Guardar cambios (estado y posible evolución)
+        team[idx] = poke;
+        await saveUser(userId, { team });
+
+        // 5) Obtener artwork oficial
         let imagen = null;
         try {
             const res = await fetch(
@@ -65,9 +60,9 @@ module.exports = {
             console.error(`Error al obtener imagen de ${poke.pokemon}:`, err);
         }
 
-        // 7) Construir y enviar el embed
+        // 6) Construir y enviar el embed de estado
         const embed = new EmbedBuilder()
-            .setTitle(`Estado de ${poke.pokemon}`)
+            .setTitle(`Estado de ${poke.pokemon.toUpperCase()}`)
             .setDescription(
                 `Nivel: ${poke.nivel}` +
                 `\n🍖 Hambre: ${poke.hambre}/100` +
@@ -77,8 +72,7 @@ module.exports = {
             )
             .setColor(0xffcb05)
             .setThumbnail(
-                imagen ||
-                'https://cdn-icons-png.flaticon.com/512/188/188987.png'
+                imagen || 'https://cdn-icons-png.flaticon.com/512/188/188987.png'
             )
             .setFooter({ text: `Entrenador: ${message.author.username}` });
 

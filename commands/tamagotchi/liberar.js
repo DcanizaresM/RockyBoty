@@ -1,34 +1,51 @@
+// commands/tamagotchi/liberar.js
 const { EmbedBuilder } = require('discord.js');
-const { getAllUsers, saveAllUsers } = require('../../data/db');
+const { getUser, saveUser } = require('../../data/db');
 
 module.exports = {
     name: 'liberar',
-    description: 'Libera a tu Pokémon actual.',
+    description: 'Libera a un Pokémon de tu equipo, excepto al inicial.',
     async execute(message, args) {
-        const users = getAllUsers();
         const userId = message.author.id;
-
-        // Verificar si el usuario tiene un Pokémon
-        if (!users[userId]) {
-            return message.reply('¡No tienes ningún Pokémon para liberar! Usa `!adoptar [Pokémon]` para adoptar uno.');
+        const nombre = args[0]?.toLowerCase();
+        if (!nombre) {
+            return message.reply('❌ Debes indicar el nombre del Pokémon: `!liberar <nombre>`');
         }
 
-        const poke = users[userId];
+        // 1) Leer usuario
+        const user = await getUser(userId);
+        if (!user?.team?.length) {
+            return message.reply('❌ ¡No tienes Pokémon para liberar!');
+        }
 
-        // Eliminar el Pokémon del usuario
-        delete users[userId];
-        saveAllUsers(users);
+        const team = [...user.team];
 
-        // Confirmar la liberación del Pokémon
-        message.reply(`¡Has liberado a ${poke.pokemon}! Ahora puedes adoptar un nuevo Pokémon. 🕊️`);
+        // 2) Impedir liberar al inicial
+        const inicial = team[0].pokemon.toLowerCase();
+        if (nombre === inicial) {
+            return message.reply(`❌ No puedes liberar a tu inicial **${inicial.toUpperCase()}**.`);
+        }
 
-        // Ofrecer la posibilidad de adoptar un nuevo Pokémon
+        // 3) Buscar índice del Pokémon a liberar
+        const idx = team.findIndex(p => p.pokemon.toLowerCase() === nombre);
+        if (idx === -1) {
+            return message.reply(`❌ No tienes a **${nombre.toUpperCase()}** en tu equipo.`);
+        }
+
+        // 4) Eliminar y guardar
+        const [liberado] = team.splice(idx, 1);
+        await saveUser(userId, { team });
+
+        // 5) Responder con embed de confirmación
         const embed = new EmbedBuilder()
-            .setTitle(`¡Has liberado a ${poke.pokemon}! 🎉`)
-            .setDescription('Ahora puedes adoptar un nuevo Pokémon usando el comando `!adoptar [Pokémon]`.')
+            .setTitle(`🕊️ Has liberado a ${liberado.pokemon.toUpperCase()}`)
+            .setDescription(
+                `Tu equipo ahora tiene ${team.length} Pokémon:\n` +
+                team.map(p => `• ${p.pokemon.toUpperCase()}`).join('\n')
+            )
             .setColor(0x30c6f0)
             .setFooter({ text: `Entrenador: ${message.author.username}` });
 
-        message.channel.send({ embeds: [embed] });
+        return message.channel.send({ embeds: [embed] });
     }
 };

@@ -1,55 +1,67 @@
 // commands/tamagotchi/jugar.js
-const { getAllUsers, saveAllUsers } = require('../../data/db');
+const { getUser, saveUser } = require('../../data/db');
 const { actualizarEstadoPorTiempo } = require('../../utils/estadoHelper');
-const evoluciones = require('../../utils/evoluciones');
-
-const getBarraXP = (xp) => {
-    const total = 20;
-    const bloques = Math.floor((xp / 100) * total);
-    const barra = '█'.repeat(bloques) + '░'.repeat(total - bloques);
-    return `[${barra}] ${xp}/100 XP`;
-};
+const { intentarEvolucion } = require('../../utils/evolucionHelper');
 
 module.exports = {
     name: 'jugar',
-    description: 'Juega con tu Pokémon y súbelo directamente de nivel.',
-    execute(message, args) {
-        const users = getAllUsers();
-        const userId = message.author.id;
-
-        if (!users[userId]) {
-            return message.reply('¡Primero adopta un Pokémon con `!adoptar Pikachu`!');
+    description: 'Juega con un Pokémon de tu equipo y súbelo de nivel. Uso: !jugar <nombre-pokemon>',
+    async execute(message, args) {
+        // 1) Validar argumento
+        const nombre = args[0]?.toLowerCase();
+        if (!nombre) {
+            return message.reply('❌ Debes indicar el nombre de tu Pokémon: `!jugar <nombre-pokemon>`');
         }
 
-        // Actualizamos el estado (hambre, energía, etc.) según el tiempo
-        users[userId] = actualizarEstadoPorTiempo(users[userId]);
-        const poke = users[userId];
+        // 2) Obtener usuario y equipo
+        const userId = message.author.id;
+        const user = await getUser(userId);
+        if (!user?.team?.length) {
+            return message.reply('❌ ¡Aún no tienes un equipo! Usa `!capturar` para añadir tu primer Pokémon.');
+        }
 
-        // Aumentamos felicidad aleatoriamente como antes
+        // 3) Buscar el Pokémon en el equipo
+        const team = user.team;
+        const idx = team.findIndex(p => p.pokemon.toLowerCase() === nombre);
+        if (idx === -1) {
+            return message.reply(`❌ No tienes a **${nombre.toUpperCase()}** en tu equipo.`);
+        }
+
+        // 4) Aplicar cambio de estado por tiempo y aumentar felicidad
+        let poke = actualizarEstadoPorTiempo(team[idx]);
         const felicidadGanada = Math.floor(Math.random() * 8) + 3;
         poke.felicidad = Math.min(100, poke.felicidad + felicidadGanada);
         poke.ultimaAccion = new Date().toISOString();
 
-        // Subimos directamente 1 nivel
+        // 5) Subir de nivel directamente
         poke.nivel += 1;
-        // Reiniciamos experiencia a cero (opcional)
         poke.experiencia = 0;
 
-        let mensaje = `🎮 Has jugado con **${poke.pokemon}**.\n\n` +
-            `✨ ¡Ha subido al nivel ${poke.nivel}! 🎉\n` +
-            `+${felicidadGanada} felicidad 😄`;
-
-        // Comprobamos evolución
-        const datosEvo = evoluciones[poke.pokemon];
-        if (datosEvo && poke.nivel >= datosEvo.nivel) {
-            const anterior = poke.pokemon;
-            poke.pokemon = datosEvo.evolucionaA;
-            mensaje += `\n🧬 ¡${anterior} ha evolucionado a **${poke.pokemon}**! 🔥`;
+        // 6) Intentar evolución automática
+        let mensajeEvo = '';
+        // DEBUG: antes de llamada a helper
+        console.log(`🔍 [jugar] llamando a intentarEvolucion para ${poke.pokemon} (nivel ${poke.nivel})`);
+        try {
+            const evoluciono = await intentarEvolucion(poke);
+            console.log(`🔍 [jugar] intentarEvolucion retornó ${evoluciono}`);
+            if (evoluciono) {
+                mensajeEvo = `
+🧬 ¡Tu Pokémon ha evolucionado a **${poke.pokemon.toUpperCase()}**!`;
+            }
+        } catch (err) {
+            console.error('Error al intentar evolución en !jugar:', err);
         }
 
+        // 7) Guardar cambios en Firestore
+        team[idx] = poke;
+        await saveUser(userId, { team }); (userId, { team });
 
-        // Guardamos cambios
-        saveAllUsers(users);
+        // 8) Responder al usuario
+        const mensaje =
+            `🎮 Has jugado con **${poke.pokemon.toUpperCase()}**.` +
+            `\n✨ ¡Ha subido al nivel ${poke.nivel}! 🎉` +
+            `\n+${felicidadGanada} felicidad 😄` +
+            mensajeEvo;
 
         return message.reply(mensaje);
     }
