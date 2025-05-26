@@ -3,7 +3,7 @@ require('dotenv').config();
 
 console.log('🔍 ENV VAR CHECK:', {
     FIREBASE_SERVICE_ACCOUNT_BASE64: !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
-    DISCORD_TOKEN: !!process.env.DISCORD_TOKEN,
+    TOKEN: !!process.env.TOKEN,
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY?.startsWith('SG.') ?? false,
 });
 
@@ -312,4 +312,4 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.TOKEN);
