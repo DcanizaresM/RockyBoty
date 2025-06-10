@@ -247,62 +247,7 @@ module.exports = {
       const newLevel = winUser.team[0].nivel;
       lvlMsg = `**${winUser.team[0].pokemon.toUpperCase()} sube al nivel ${newLevel}!**`;
 
-      // movimientos nuevos
-      const species = winUser.team[0].pokemon.toLowerCase();
-      const pokeData = await fetch(`https://pokeapi.co/api/v2/pokemon/${species}`)
-        .then(r => r.json());
-      const learnable = pokeData.moves.flatMap(m =>
-        m.version_group_details
-          .filter(d =>
-            d.move_learn_method.name === 'level-up' &&
-            d.level_learned_at === newLevel
-          )
-          .map(() => m.move.name)
-      );
-
-      for (const mvName of learnable) {
-        if (winUser.team[0].moves.length < 4) {
-          winUser.team[0].moves.push(mvName);
-          lvlMsg += `\n★ Aprende **${mvName}**`;
-        } else {
-          const current = winUser.team[0].moves;
-          const options = current.map(m => ({ label: m, value: m }));
-          const menu = new StringSelectMenuBuilder()
-            .setCustomId(`forget_${winner}_${mvName}`)
-            .setPlaceholder(`Olvida un movimiento para aprender ${mvName}`)
-            .addOptions(options);
-          const prompt = await message.channel.send({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle('🧠 Aprendizaje de movimiento')
-                .setDescription(
-                  `Tu ${winUser.team[0].pokemon} puede aprender **${mvName}**, pero ya tiene 4 movimientos. ¿Cuál quieres olvidar?`
-                )
-                .setColor(0xffa500)
-            ],
-            components: [new ActionRowBuilder().addComponents(menu)]
-          });
-          try {
-            const inter = await prompt.awaitMessageComponent({
-              filter: i => i.user.id === winner && i.customId.startsWith(`forget_${winner}_`),
-              time: 30000
-            });
-            await inter.deferUpdate();
-            const toForget = inter.values[0];
-            const idx = current.indexOf(toForget);
-            winUser.team[0].moves[idx] = mvName;
-            lvlMsg += `\n★ Olvida **${toForget}**, aprende **${mvName}**`;
-          } catch {
-            lvlMsg += `\n(Se omitió aprender ${mvName} por tiempo)`;
-          } finally {
-            await prompt.edit({ components: [], embeds: [] });
-          }
-        }
-      }
-    } else {
-      lvlMsg = `**${winUser.team[0].pokemon.toUpperCase()} no sube de nivel aún.**`;
     }
-
     // Embed final con sprite y nivel
     const spriteUrl = winUser.team[0].imagen;
     battleEmbed
