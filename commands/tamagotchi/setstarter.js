@@ -4,12 +4,9 @@ const fetch = require('node-fetch');
 
 module.exports = {
     name: 'setstarter',
-    description: '🛠️ [Admin] Asigna un Pokémon inicial a tu equipo.',
+    description: '🛠️ Asigna un Pokémon inicial a tu equipo.',
     async execute(message, args) {
-        // Solo admins del servidor
-        if (!message.member.permissions.has('Administrator')) {
-            return message.reply('❌ No tienes permiso para esto.');
-        }
+
 
         const pokemon = args[0]?.toLowerCase();
         if (!pokemon) {
