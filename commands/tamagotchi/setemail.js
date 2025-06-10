@@ -5,7 +5,7 @@ const { getUser, saveUser } = require('../../data/db');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setemail')
-        .setDescription('Registra tu email para recibir notificaciones')
+        .setDescription('Registra tu GMAIL para recibir notificaciones')
         .addStringOption(opt =>
             opt.setName('email')
                 .setDescription('Tu dirección de correo')
